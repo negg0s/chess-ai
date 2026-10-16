@@ -1,0 +1,35 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Credentials & environment variables
+.env
+*.token
+
+# Large engine binaries (downloaded automatically or added manually)
+engine/stockfish.exe
+engine/*.zip
+*.exe
+
+# Dataset caches and opening books
+data/
+*.pgn
+*.zst
+*.tar.gz
+
+# Logs & temporary files
+*.log
+training_summary.json
+.cache/
+.vscode/
+.idea/
