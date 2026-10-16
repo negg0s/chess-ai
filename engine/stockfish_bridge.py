@@ -1,8 +1,3 @@
-r"""
-Stockfish 19/17 Engine Bridge
-Connects to Stockfish (3600+ Elo) for superhuman moves capable of beating any human grandmaster.
-Downloads the official Windows x86-64 binary directly into D:\chess_ai\engine if missing.
-"""
 import os
 import sys
 import zipfile
@@ -13,8 +8,6 @@ import chess.engine
 
 ENGINE_DIR = Path(__file__).resolve().parent
 STOCKFISH_EXE = ENGINE_DIR / "stockfish.exe"
-
-# Official Stockfish GitHub releases / download mirror
 STOCKFISH_URL = "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-x86-64-universal.zip"
 
 class StockfishEngine:
@@ -23,12 +16,10 @@ class StockfishEngine:
         self.engine: chess.engine.SimpleEngine = None
 
     def ensure_installed(self):
-        """Checks if Stockfish binary exists; if not, downloads and extracts it."""
         if self.exe_path.exists():
             return True
 
-        print(f"[StockfishEngine] Stockfish binary not found at {self.exe_path}.")
-        print(f"[StockfishEngine] Downloading latest official Stockfish binary to D:\\chess_ai\\engine...")
+        print(f"[Stockfish] Binary not found at {self.exe_path}. Downloading...")
         ENGINE_DIR.mkdir(parents=True, exist_ok=True)
         zip_path = ENGINE_DIR / "stockfish.zip"
 
@@ -38,7 +29,6 @@ class StockfishEngine:
             with urllib.request.urlopen(req) as resp, open(zip_path, "wb") as out_file:
                 out_file.write(resp.read())
 
-            print("[StockfishEngine] Extracting Stockfish...")
             with zipfile.ZipFile(zip_path, "r") as z:
                 for member in z.namelist():
                     if member.endswith(".exe"):
@@ -49,10 +39,10 @@ class StockfishEngine:
             if zip_path.exists():
                 zip_path.unlink()
 
-            print(f"[StockfishEngine] Stockfish successfully installed to {self.exe_path}!")
+            print(f"[Stockfish] Downloaded to {self.exe_path}")
             return True
         except Exception as e:
-            print(f"[StockfishEngine] Note: Automatic download failed ({e}). You can place stockfish.exe into {ENGINE_DIR}.")
+            print(f"[Stockfish] Download error: {e}")
             return False
 
     def start(self):
