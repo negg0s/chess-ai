@@ -22,12 +22,14 @@ engine/*.zip
 *.exe
 
 # Dataset caches and opening books
-data/
+data/*
+!data/book.example.json
 *.pgn
 *.zst
 *.tar.gz
 
 # Logs & temporary files
+logs/
 *.log
 training_summary.json
 .cache/
