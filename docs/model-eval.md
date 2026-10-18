@@ -1,9 +1,27 @@
-# Model evaluation report (chess_brain_ultra.pt)
+# Model evaluation report
 
 Generated: 2026-10-18. Script: `scripts/eval_model.py` (deterministic seed 42).
 Env: Windows 11, RTX 3050 (CUDA, torch 2.6.0+cu124), python-chess 1.11.2,
-Stockfish sf_19 (local `engine/stockfish.exe`), model `models/chess_brain_ultra.pt`
-(75.4 MB, tracked in git, loaded with `torch.load(weights_only=True)`).
+Stockfish sf_19 (local `engine/stockfish.exe`).
+
+Two checkpoints are reported:
+
+- `models/chess_brain_ultra.pt` (75.4 MB) - the original, trained with the
+  pre-fix pipeline that had the defects listed below.
+- `models/chess_brain_20261018.pt` - retrained **after** the pipeline fixes
+  with `brain/train.py --epochs 20 --num-games 2500 --seed 42`
+  (2500 greedy-material self-play games, ~10 % random moves, value labels
+  NaN-masked for unfinished games). The saved checkpoint is the best
+  validation loss (epoch 2; further epochs overfit the synthetic set).
+
+## Results
+
+| Metric | chess_brain_ultra.pt | chess_brain_20261018.pt |
+|---|---|---|
+| Policy top-1 agreement vs SF d8 | **0.1467** (14.7 %) | **0.2000** (20.0 %) |
+| Policy top-3 containment vs SF d8 | **0.2800** (28.0 %) | **0.3800** (38.0 %) |
+| Mean abs value diff (model vs tanh(cp/400)) | **0.8070** | **0.6408** |
+| Pearson correlation (value) | **-0.0000** | **0.4438** |
 
 ## Method
 
@@ -19,7 +37,7 @@ Stockfish sf_19 (local `engine/stockfish.exe`), model `models/chess_brain_ultra.
 - Random/legal-only baseline for top-1 would be roughly 1 / (avg. number of
   legal moves), i.e. a few percent.
 
-## Results
+## Results (chess_brain_ultra.pt, pre-retrain snapshot)
 
 | Metric | Value |
 |---|---|
@@ -28,36 +46,40 @@ Stockfish sf_19 (local `engine/stockfish.exe`), model `models/chess_brain_ultra.
 | Mean abs value diff (model vs tanh(cp/400)) | **0.8070** |
 | Pearson correlation (value) | **-0.0000** |
 
-Console output of the run:
+Console output of the retrained checkpoint run (`chess_brain_20261018.pt`):
 
 ```
 positions=300 device=cuda
-... 300/300: top1=0.147 top3=0.280
-policy top-1 agreement vs Stockfish depth 8: 0.1467
-policy top-3 containment vs Stockfish depth 8: 0.2800
-signal (mean abs value diff): 0.8070
-pearson(corr): -0.0000
+... 300/300: top1=0.200 top3=0.380
+policy top-1 agreement vs Stockfish depth 8: 0.2000
+policy top-3 containment vs Stockfish depth 8: 0.3800
+signal (mean abs value diff): 0.6408
+pearson(corr): 0.4438
 ```
 
 ## Interpretation
 
-- Top-1 ≈ 15 % is well above the random baseline but far from usable chess
-  strength; top-3 ≈ 28 % confirms the policy head carries very little
-  positional signal.
-- The value head is statistically indistinguishable from noise
-  (correlation ≈ 0, mean absolute error ≈ 0.81 ≈ 2 × expected spread of
-  ±random labels).
-- Consistent with the training-pipeline defects that were fixed in this
-  branch (see README and git history): the dataset had duplicated
-  deterministic games, a wrong material-perspective sign, value labels
-  recorded from the white side for every position, underpromotions mapped
-  onto the queen slot, and truncated games labeled as draws.
+- The fixes in this branch produced a real improvement: top-1 went from
+  ≈15 % to 20 %, top-3 from ≈28 % to 38 %, and the value head now carries
+  actual signal (Pearson ≈ 0.44, mean abs diff 0.64). The previous
+  checkpoint's value head was statistically indistinguishable from noise
+  (correlation ≈ 0, mean absolute error ≈ 0.81).
+- The fixed defects were: duplicated deterministic games, a wrong
+  material-perspective sign, value labels recorded from the white side for
+  every position, underpromotions mapped onto the queen slot, and truncated
+  games labeled as draws.
+- Both checkpoints are still far from usable chess strength: the training
+  signal is greedy-material self-play against 4096 output classes, and
+  validation loss degrades monotonically after ~2 epochs on this synthetic
+  set (overfitting), so the checkpoint is capped by the data, not by the
+  architecture.
 
 ## Recommendation
 
-Do not use `chess_brain_ultra.pt` for move selection. The repo's bot plays
-with Stockfish, and the neural network is optional (`USE_NEURAL_FALLBACK=0`
-by default). Retraining is only meaningful after re-checking that a
-rebalanced dataset (proper perspective labels, deduplication, promotion
-handling) yields a stepping-stone improvement measured with this same
-script.
+Do not use either checkpoint for standalone move selection. The repo's bot
+plays with Stockfish, and the neural network is optional
+(`USE_NEURAL_FALLBACK=0` by default). The next useful step for the neural
+part would be better supervision than greedy-material self-play data
+(e.g. Grandmaster PGNs - the code from quoting them is in `data/` - or an
+AlphaZero-style tree search), re-measured with this same script so that
+numbers remain comparable.
