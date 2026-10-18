@@ -1,0 +1,9 @@
+# Всё, что нужно только для обучения и утилит (brain/train.py, eval-скрипты),
+# плюс пакеты для неиспользуемого ботом модуля vision/ (opencv, Pillow,
+# torchvision) — оставлены здесь, чтобы их можно было убрать одним движением,
+# если функциональность vision/ не нужна.
+-r requirements.txt
+tqdm>=4.60
+torchvision
+opencv-python
+Pillow

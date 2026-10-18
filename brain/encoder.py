@@ -59,10 +59,65 @@ def board_to_tensor(board: chess.Board) -> torch.Tensor:
     return torch.from_numpy(tensor)
 
 def move_to_index(move: chess.Move) -> int:
-    """Encodes move (from_sq, to_sq) into index 0..4095"""
+    """Encodes move (from_sq, to_sq) into index 0..4095.
+
+    Underpromotions and queen promotion share the same index (from, to);
+    the 4096 space has no promotion dimension.
+    """
     return move.from_square * 64 + move.to_square
 
 def index_to_move(index: int) -> chess.Move:
     from_sq = index // 64
     to_sq = index % 64
     return chess.Move(from_sq, to_sq)
+
+def index_to_legal_move(index: int, board: chess.Board) -> chess.Move | None:
+    """Map a policy index to a legal move on `board`, promoting pawns to queen.
+
+    Returns the queen-promotion variant when the encoded (from, to) pair is a
+    legal pawn push or capture to the last rank; returns None for illegal
+    encodings. Underpromotion is not representable in the 4096 space, so the
+    read is lossy by design: any underpromotion recorded in a dataset would
+    share an index with the queen promotion.
+    """
+    move = chess.Move(index // 64, index % 64)
+    if move in board.legal_moves:
+        return move
+    pawn = board.piece_at(move.from_square)
+    if pawn is not None and pawn.piece_type == chess.PAWN:
+        promo_rank = chess.square_rank(move.to_square)
+        if promo_rank in (0, 7):
+            for promo in (chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT):
+                candidate = chess.Move(move.from_square, move.to_square, promotion=promo)
+                if candidate in board.legal_moves:
+                    return candidate
+    return None
+
+def policy_best_move(policy_logits, board: chess.Board) -> chess.Move | None:
+    """Best legal move from policy logits for `board`.
+
+    Masks illegal indexes and promotes pawns to queen. Returns None when the
+    board has no legal moves.
+    """
+    legal = list(board.legal_moves)
+    if not legal:
+        return None
+
+    duplicates = {}  # 4096 index -> best representative move (prefer queen promo)
+    for move in legal:
+        index = move_to_index(move)
+        current = duplicates.get(index)
+        if current is None or (current.promotion != chess.QUEEN and move.promotion == chess.QUEEN):
+            duplicates[index] = move
+
+    mask = torch.full_like(policy_logits, float("-inf"))
+    for index in duplicates:
+        mask[index] = 0.0
+    best_index = int(torch.argmax(policy_logits + mask).item())
+
+    move = index_to_legal_move(best_index, board)
+    if move is not None:
+        return move
+    return duplicates[best_index]
+
+
