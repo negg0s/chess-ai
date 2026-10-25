@@ -1,12 +1,14 @@
 # chess-ai
 
+[![CI](https://github.com/negg0s/chess-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/negg0s/chess-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Шахматный бот для Lichess: полноценный движок **Stockfish**, опциональная
 нейросеть (ResNet policy-value) — экспериментальная часть, по умолчанию не
 влияет на ходы. Есть CLI для анализа позиций и запуска обучения на
 синтетических партиях.
 
-> **См. также**: `CLEANUP_PROGRESS.md` (список правок этой ветки) и
-> `docs/model-eval.md` (проверка модели, воспроизводимая в этой же ветке).
+> **См. также**: [`docs/model-eval.md`](docs/model-eval.md) (проверка модели).
 
 ## Как работает бот
 
