@@ -96,4 +96,4 @@ data/            book.example.json + папка для PGN/книг (gitignored)
 
 ## Лицензия
 
-License ещё не выбрана автором (см. `CLEANUP_PROGRESS.md`, needs-author).
+MIT. См. [LICENSE](LICENSE).
