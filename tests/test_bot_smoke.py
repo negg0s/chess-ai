@@ -35,3 +35,30 @@ def test_bot_id_resolved_from_env_override():
     # start() resolves /api/account; here only the override plumbing is checked
     bot = lichess_bot.LichessBot(token="")
     assert bot.bot_id == ""
+
+
+def test_stockfish_ensure_installed_from_bytes(tmp_path, monkeypatch):
+    import io
+    import zipfile
+    from engine.stockfish_bridge import StockfishEngine
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("stockfish-windows-x86-64.exe", b"MZ_FAKE_BINARY")
+    zip_bytes = buf.getvalue()
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def read(self):
+            return zip_bytes
+
+    target_exe = tmp_path / "sf.exe"
+    engine = StockfishEngine(executable_path=target_exe)
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: FakeResponse())
+
+    assert engine.ensure_installed() is True
+    assert target_exe.exists()
+    assert target_exe.read_bytes() == b"MZ_FAKE_BINARY"

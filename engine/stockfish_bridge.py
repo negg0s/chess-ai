@@ -1,6 +1,7 @@
 """Stockfish bridge: process management, download, move search."""
 import atexit
 import hashlib
+import io
 import logging
 import zipfile
 import urllib.request
@@ -81,7 +82,7 @@ class StockfishEngine:
                 logger.warning("No checksum configured for the Stockfish release zip; "
                                "integrity is not verified.")
 
-            with zipfile.ZipFile(zip_path, "r") as archive:
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
                 member = next(
                     (name for name in archive.namelist()
                      if name.lower().endswith(".exe") and "stockfish" in Path(name).name.lower()),
@@ -92,7 +93,6 @@ class StockfishEngine:
                 with archive.open(member) as source, open(self.exe_path, "wb") as target:
                     target.write(source.read())
 
-            zip_path.unlink(missing_ok=True)
             logger.info("Downloaded to %s", self.exe_path)
             return True
         except Exception:
