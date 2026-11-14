@@ -3,7 +3,7 @@
 # torchvision) - оставлены здесь, чтобы их можно было убрать одним движением,
 # если функциональность vision/ не нужна.
 -r requirements.txt
-tqdm>=4.60
+tqdm>=4.70.1
 torchvision
 opencv-python
 Pillow
