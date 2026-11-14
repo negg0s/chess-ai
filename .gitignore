@@ -35,3 +35,7 @@ training_summary.json
 .cache/
 .vscode/
 .idea/
+# Python cache
+*.pyc
+*.pyo
+*.pyd
