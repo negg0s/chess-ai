@@ -2,7 +2,7 @@
 # NOTE: переобучение имеет смысл только с PyTorch >= 2.0 (torch.load
 # uses weights_only).
 python-chess>=1.10
-requests>=2.28
+requests>=2.34.2
 numpy>=1.24
 python-dotenv>=1.0
 torch>=2.0.0
