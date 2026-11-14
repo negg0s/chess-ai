@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Verify repository constraints
+        run: python tools/check_constraints.py
       - name: Install dependencies (CPU torch)
         run: |
           python -m pip install --upgrade pip
