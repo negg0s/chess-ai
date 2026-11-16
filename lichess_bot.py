@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import sys
 import time
@@ -74,15 +75,25 @@ def compute_time_allocation(time_left_sec: float, increment_sec: float = 0.0):
     """Clock-aware thinking budget.
 
     Returns (time_alloc_seconds, search_depth). The increment is folded into
-    the "safe to spend" estimate for passable time; below 5 seconds on the
+    the safe to spend estimate for passable time; below 5 seconds on the
     clock the bot plays fast and shallow.
     """
-    time_left_sec = max(0.0, float(time_left_sec or 0.0))
-    increment_sec = max(0.0, float(increment_sec or 0.0))
-    budget = time_left_sec + min(increment_sec, 10.0)
+    safe_min = (0.05, 12)
+    try:
+        t = 0.0 if time_left_sec is None else float(time_left_sec)
+        inc = 0.0 if increment_sec is None else float(increment_sec)
+    except (ValueError, TypeError, OverflowError):
+        return safe_min
+
+    if math.isnan(t) or math.isinf(t) or t <= 0.0:
+        t = 0.0
+    if math.isnan(inc) or math.isinf(inc) or inc <= 0.0:
+        inc = 0.0
+
+    budget = t + min(inc, 10.0)
 
     if budget < 5.0:
-        return 0.05, 12
+        return safe_min
     if budget < 15.0:
         return 0.15, 16
     if budget < 30.0:
