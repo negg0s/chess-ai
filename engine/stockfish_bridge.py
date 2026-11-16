@@ -1,14 +1,19 @@
 """Stockfish bridge: process management, download, move search."""
+from __future__ import annotations
+
 import atexit
 import hashlib
 import io
 import logging
-import zipfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
-import chess
-import chess.engine
+try:
+    import chess
+    import chess.engine
+except ImportError:
+    chess = None
 
 logger = logging.getLogger("chessbot.stockfish")
 
@@ -66,7 +71,6 @@ class StockfishEngine:
 
         logger.info("Binary not found at %s. Downloading...", self.exe_path)
         self.exe_path.parent.mkdir(parents=True, exist_ok=True)
-        zip_path = self.exe_path.parent / "stockfish.zip"
 
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -104,6 +108,10 @@ class StockfishEngine:
         if self.engine is not None:
             return True
 
+        if chess is None:
+            logger.error("Could not start engine: python-chess is not installed.")
+            return False
+
         if not self.exe_path.exists() and not self.ensure_installed():
             logger.error("Could not start engine: binary missing.")
             return False
@@ -123,6 +131,9 @@ class StockfishEngine:
         The context manager form (`with StockfishEngine() as engine:`) is the
         preferred way to guarantee the subprocess is terminated (CH-23).
         """
+        if chess is None:
+            raise RuntimeError("python-chess is not installed.")
+
         if self.engine is None:
             self.start()
         if self.engine is None:
@@ -132,13 +143,15 @@ class StockfishEngine:
 
         result = self.engine.analyse(board, chess.engine.Limit(depth=depth, time=time_limit))
 
-        score = result["score"].relative
-        best_move = result.get("pv", [None])[0]
-        pv_uci = [m.uci() for m in result.get("pv", [])]
+        score_obj = result.get("score")
+        score_str = str(score_obj.relative) if score_obj is not None else "0"
+        pv = result.get("pv") or []
+        best_move = pv[0] if pv else None
+        pv_uci = [m.uci() for m in pv]
 
         return {
             "best_move": best_move.uci() if best_move else None,
-            "score": str(score),
+            "score": score_str,
             "depth": result.get("depth", depth),
             "pv": pv_uci,
             "turn": "White" if board.turn == chess.WHITE else "Black",
