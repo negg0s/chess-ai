@@ -1,6 +1,7 @@
-import chess
 import pytest
-import torch
+
+chess = pytest.importorskip("chess")
+torch = pytest.importorskip("torch")
 
 from brain.encoder import (
     board_to_tensor,

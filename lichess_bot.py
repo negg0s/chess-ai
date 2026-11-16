@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 import time
@@ -8,8 +10,16 @@ import threading
 from pathlib import Path
 
 import requests
-import chess
-import torch
+
+try:
+    import chess
+except ImportError:
+    chess = None
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR))
@@ -22,9 +32,19 @@ except ImportError:  # running without python-dotenv: rely on real env vars
     pass
 
 from config import MODEL_FILENAME, ensure_dirs, STOCKFISH_PATH
-from engine.stockfish_bridge import StockfishEngine
-from brain.model import ChessBrainNet
-from brain.encoder import board_to_tensor, policy_best_move
+
+try:
+    from engine.stockfish_bridge import StockfishEngine
+except ImportError:
+    StockfishEngine = None
+
+try:
+    from brain.model import ChessBrainNet
+    from brain.encoder import board_to_tensor, policy_best_move
+except ImportError:
+    ChessBrainNet = None
+    board_to_tensor = None
+    policy_best_move = None
 
 ensure_dirs()
 
@@ -72,6 +92,10 @@ def compute_time_allocation(time_left_sec: float, increment_sec: float = 0.0):
 
 class LichessBot:
     def __init__(self, token: str = TOKEN):
+        if chess is None:
+            raise RuntimeError("python-chess package is required to run LichessBot")
+        if torch is None or ChessBrainNet is None:
+            raise RuntimeError("torch package is required to run LichessBot")
         self.token = token
         if not self.token:
             logger.warning("LICHESS_TOKEN is empty. Set it in .env or pass as argument.")

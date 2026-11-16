@@ -1,8 +1,9 @@
-import chess
 import math
-import pytest
 import random
-import torch
+import pytest
+
+chess = pytest.importorskip("chess")
+torch = pytest.importorskip("torch")
 
 import brain.train as train_mod
 from brain.train import (

@@ -1,7 +1,9 @@
 import json
 import logging
+import pytest
 
-import torch
+torch = pytest.importorskip("torch")
+chess = pytest.importorskip("chess")
 
 import lichess_bot
 
