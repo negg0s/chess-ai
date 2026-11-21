@@ -3,6 +3,6 @@
 # uses weights_only).
 python-chess>=1.999
 requests>=2.34.2
-numpy>=1.24
+numpy>=2.5.5
 python-dotenv>=1.2.4
 torch>=2.0.0
